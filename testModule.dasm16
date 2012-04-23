@@ -1,0 +1,24 @@
+; Some test module for freeOS
+
+     SET B, PC
+     SUB B, 1 ; get module base
+     SET PC, init
+
+:module_base
+     DAT 0x0000
+:first_letter
+     DAT "S"
+:second_letter
+     DAT "D"
+
+:init
+     SET [module_base + B], B ; save module_base
+     SET [0x8160], 0x0020
+     SET A, [first_letter + B]
+     ADD A, 0xC000
+     SET [0x8161], A
+     SET A, [second_letter + B]
+     ADD A, 0xC000
+     SET [0x8162], A
+:dummy
+     SET PC, dummy

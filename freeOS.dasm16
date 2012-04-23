@@ -1,0 +1,573 @@
+; freeOS_0.0.1
+;
+; Operation system for research
+; and development for everyone.
+;
+; Initiator: darkness.bsd (Dmitry)
+; Email: darkness.bsd@gmail.com
+; From: F.E.D. (http://0x10cforum.com/forum/m/4932880/
+;               viewthread/2806646-federation-exploration-development)
+; Github:
+
+:init
+     SET PC, loader
+
+:address_of_api_list
+     DAT 0x0500
+:address_of_fos_modules
+     DAT 0x0600
+:address_of_user_space
+     DAT 0x0000
+
+:os_version
+     DAT "freeOS_0.0.1               F.E.D", 0x0000
+:os_info0
+     DAT "        Operation system", 0x0000
+:os_info1
+     DAT "  for research and development", 0x0000
+:os_info2
+     DAT "          for everyone", 0x0000
+:os_info3
+     DAT " ", 0x0000
+
+:lffs_version
+     DAT 0x0001
+:lffs_start_address
+     DAT 0x6000
+:lffs_size
+     DAT 0x2000
+:lffs_search_message
+     DAT "Searching for lffs...", 0x0000
+:lffs_create_message
+     DAT "Creating lffs at 0x6000...", 0x0000
+
+:modules_writing_message
+     DAT "Writing modules to lffs...", 0x0000
+:modules_loading_message
+     DAT "Loading modules...", 0x0000
+
+; precompiled modules
+:modules_count
+     DAT 0x0005
+
+     DAT 0x0024
+     DAT 0x0019
+     DAT "testModule", 0x0000
+     DAT 0x7011, 0x8413, 0x7DC1, 0x0007, 0x0000, 0x0053
+     DAT 0x0044, 0x0511, 0x0004, 0x7DE1, 0x8160, 0x0020
+     DAT 0x4401, 0x0005, 0x7C02, 0xA000, 0x01E1, 0x8161
+     DAT 0x4401, 0x0006, 0x7C02, 0xA000, 0x01E1, 0x8162
+     DAT 0xE1C1
+
+     DAT 0x0010 ;module_size
+     DAT 0x0005 ;module_data_size
+     DAT "free_mod0", 0x0000 ;module_name, maximum 12 characters
+     DAT 0x00FA, 0x0045, 0x0750, 0x0452, 0x7630 ;module_data
+
+     DAT 0x000D
+     DAT 0x0002
+     DAT "free_mod1", 0x0000
+     DAT 0x5600, 0x0730
+
+     DAT 0x000F
+     DAT 0x0003
+     DAT "ds_module0", 0x0000
+     DAT 0x7500, 0x0750, 0x7557
+
+     DAT 0x000F
+     DAT 0x0003
+     DAT "ds_module1", 0x0000
+     DAT 0xFFAA, 0xAAFF, 0xFAAF
+
+:loader
+     SET X, 0x8000
+     SET [0x8180], X ; set video ram line pointer
+     SET A, address_of_api_list
+
+:print_os_version
+     ;SET PUSH, os_version
+     ;JSR println
+:print_os_info
+     ;SET PUSH, os_info0
+     ;JSR println
+     ;SET PUSH, os_info1
+     ;JSR println
+     ;SET PUSH, os_info2
+     ;JSR println
+     ;SET PUSH, os_info3
+     ;JSR println
+     ;JSR showWand
+     ;SET PUSH, os_info3
+     ;JSR print
+
+:search_for_lffs
+     ;SET PUSH, lffs_search_message
+     ;JSR println
+     SET A, [lffs_start_address]
+     IFN [A], 0x6C66
+     SET PC, create_lffs
+     ADD A, 1
+     IFN [A], 0x6673
+     SET PC, create_lffs
+     SET PC, load_modules
+:create_lffs
+     ;SET PUSH, lffs_create_message
+     ;JSR println
+     SET A, [lffs_start_address]
+     SET [A], 0x6C66
+     ADD A, 1
+     SET [A], 0x6673 ; create lffs signature
+     ADD A, 1
+     SET [A], [lffs_version] ; set lffs version
+     ADD A, 1
+     SET [A], [lffs_start_address] ; set start address of lffs
+     ADD A, 1
+     SET [A], [lffs_size] ; set lffs size
+     ADD A, 1
+     SET [A], 0x0000
+     ADD A, 1
+     SET [A], 0x0000 ; set checksum
+     ;SET PUSH, modules_writing_message
+     ;JSR println
+     SET PUSH, modules_count
+     SET PUSH, 0x6000
+     JSR writeModules
+:load_modules
+     ;SET PUSH, modules_loading_message
+     ;JSR println
+     ;JSR showWand
+     ;SET PUSH, os_info3
+     ;JSR print
+     SET PUSH, [address_of_api_list]
+     SET PUSH, [address_of_fos_modules]
+     SET PUSH, [lffs_start_address]
+     JSR loadModules
+
+     SET A, [address_of_api_list]
+     SET PC, A
+:dummy
+     SET PC, dummy
+
+; ------------ Some loader specific routine ------------
+
+; Start loadModules function
+;     1 param - address of api list
+;     2 param - address of modules space
+;     3 param - address of lffs
+;     4 param - return address
+:loadModules
+     SET PUSH, A
+     SET PUSH, B
+     SET PUSH, C
+     SET PUSH, X
+     SET PUSH, Y
+     SET PUSH, Z
+     SET PUSH, I
+     SET PUSH, J
+     SET PUSH, O
+
+     ADD SP, 0x000C
+     SET A, PEEK ; address of api list
+     SUB SP, 1
+     SET B, PEEK ; address of modules space
+     SUB SP, 1
+     SET C, PEEK ; address of lffs
+     SUB SP, 1
+     SET X, PEEK
+     ADD SP, 3
+     SET PEEK, X
+     SUB SP, 0x000C
+
+     ADD C, 0x0007 ; address of first file record
+:setup_loadModules
+     SET Z, C
+     ADD Z, 0x000D
+     IFE [Z], 0
+     SET PC, loadModules_end
+     SET X, [Z] ; size of file data
+     SET Z, C
+     ADD Z, 0x0010
+     SET Y, Z ; address of file data
+
+     ;SET PUSH, C
+     ;JSR println ; print name of module
+:setup_loadModules_copy_file_data
+     SET Z, B ; place address of modules space to Z
+     SET I, A ; place address of api list to I
+     SET [I], 0x7DC1
+     ADD I, 1
+     SET [I], Z ; create api entry point
+     ADD I, 1
+     SET A, I ; point to next api list entry point
+:loadModules_copy_file_data
+     IFE X, 0
+     SET PC, loadModules_update
+     SET PUSH, [Y]
+     SET [B], POP
+     ADD Y, 1
+     ADD B, 1
+     SUB X, 1
+     SET PC, loadModules_copy_file_data
+:loadModules_update
+              ; here, B point to next module in modules space
+     SET Z, C
+     ADD Z, 0x000C
+     ADD C, [Z] ; point to next file record in lffs
+     SET PC, setup_loadModules
+
+:loadModules_end
+     SET O, POP
+     SET J, POP
+     SET I, POP
+     SET Z, POP
+     SET Y, POP
+     SET X, POP
+     SET C, POP
+     SET B, POP
+     SET A, POP
+     ADD SP, 3
+     SET PC, POP
+; End loadModules function
+
+; Start writeModules function
+;     1 param - address of modules structure
+;     2 param - address of lffs
+;     3 param - return address
+:writeModules
+     SET PUSH, A
+     SET PUSH, B
+     SET PUSH, C
+     SET PUSH, X
+     SET PUSH, Y
+     SET PUSH, Z
+     SET PUSH, I
+     SET PUSH, J
+     SET PUSH, O
+
+     ADD SP, 0x000B
+     SET A, PEEK ; address of modules structure
+     SUB SP, 1
+     SET B, PEEK ; address of lffs
+     SUB SP, 1
+     SET X, PEEK
+     ADD SP, 2
+     SET PEEK, X
+     SUB SP, 0x000B
+
+     SET C, [A]
+     SET X, B
+     ADD X, 0x0007
+     SET Y, A
+     ADD Y, 1
+:write_modules_create_file_record
+     IFE C, 0
+     SET PC, write_modules_end
+
+     SET Z, Y
+     ADD Z, 2
+     SET I, X
+:write_modules_copy_name
+     IFE [Z], 0
+     SET PC, write_modules_set_offset_to_next_file
+     SET PUSH, [Z]
+     SET [I], POP
+     ADD Z, 1
+     ADD I, 1
+     SET PC, write_modules_copy_name
+:write_modules_set_offset_to_next_file
+     SET Z, Y
+     ADD Z, 1
+     SET Z, [Z] ; get module data size
+     ADD Z, 0x0010
+     SET PUSH, Z
+     SET PUSH, Z
+     SET Z, X
+     ADD Z, 0x000C
+     SET [Z], POP ; set next file offset
+:write_modules_set_size_of_file_data
+     SET Z, POP
+     SUB Z, 0x0010 ; get module data size
+     SET PUSH, Z
+     SET Z, X
+     ADD Z, 0x000D
+     SET [Z], POP ; set file data size
+:write_modules_set_file_rights_and_attributes
+     SET Z, X
+     ADD Z, 0x000E
+     SET [Z], 0x5900 ; file rights
+     ADD Z, 1
+     SET [Z], 0x8080 ; file attributes
+:write_modules_set_file_data
+     SET I, [Y] ; module size
+     SET Z, Y
+     ADD Z, 1
+     SET Z, [Z] ; size of module data
+     SUB I, Z
+     ADD I, 1
+     SET Z, Y
+     ADD Z, I
+     SET I, Z ; address of file data in module
+     SET Z, X
+     ADD Z, 0x0010 ;address of file data in file record
+     SET J, Y
+     ADD J, 0x0001
+     SET J, [J] ; size of file data
+:write_modules_set_file_data_loop
+     IFE J, 0
+     SET PC, write_modules_setup
+     SET PUSH, [I]
+     SET [Z], POP
+     ADD I, 1
+     ADD Z, 1
+     SUB J, 1
+     SET PC, write_modules_set_file_data_loop
+:write_modules_setup
+     SET Z, X
+     ADD Z, 0x000C
+     SET Z, [Z]
+     ADD X, Z ; update address of file record
+     SET Z, [Y]
+     ADD Y, Z ; update address of module record
+     ADD Y, 1
+     SUB C, 1
+     SET PC, write_modules_create_file_record
+:write_modules_end
+     SET O, POP
+     SET J, POP
+     SET I, POP
+     SET Z, POP
+     SET Y, POP
+     SET X, POP
+     SET C, POP
+     SET B, POP
+     SET A, POP
+     ADD SP, 2
+     SET PC, POP
+; End writeModules function
+
+; Start println function
+;     1 param - address to zero-ended string, maximum 232 charecters (need to bag fix)
+;     2 param - return address
+:println
+     SET PUSH, A
+     SET PUSH, B
+     SET PUSH, C
+     SET PUSH, X
+     SET PUSH, Y
+     SET PUSH, Z
+     SET PUSH, I
+     SET PUSH, J
+     SET PUSH, O
+
+     ADD SP, 0x000A
+     SET A, PEEK ; address of string in A
+     SUB SP, 1
+     SET X, PEEK
+     ADD SP, 1
+     SET PEEK, X
+     SUB SP, 0x000A
+
+:println_search_empty_line
+     IFE [0x8180], 0x8180
+     SET PC, setup_println_check_string_size
+     SET B, [0x8180]
+     SET I, 0
+:println_loop
+     IFE [A], 0
+     SET PC, println_end
+     SET X, [A]
+     ADD X, 0xA000
+     SET [B], X
+     ADD A, 1
+     ADD B, 1
+     IFE I, 0x001F
+     SET PC, println_modify_pointer
+     SET PC, println_loop_continue
+:println_modify_pointer
+     SET I, 0
+     SET X, [0x8180]
+     ADD X, 0x0020
+     SET [0x8180], X
+     SET PC, println_loop
+:println_loop_continue
+     ADD I, 1
+     SET PC, println_loop
+:setup_println_check_string_size
+     SET I, 0
+     SET J, 1
+     SET B, A
+:println_check_string_size
+     IFE [B], 0
+     SET PC, setup_println_update_video_ram
+     IFE I, 0x0020
+     SET PC, println_update_counter
+     SET PC, println_check_string_size_next
+:println_update_counter
+     ADD J, 1
+     SET I, 0
+     ADD B, 1
+     SET PC, println_check_string_size
+:println_check_string_size_next
+     ADD I, 1
+     ADD B, 1
+     SET PC, println_check_string_size
+:setup_println_update_video_ram
+     SET B, 0x0020
+     MUL B, J
+     SET PUSH, B
+     SET C, 0x8180
+     SUB C, B
+     SET [0x8180], C ; set pointer to last line
+     SET B, 0x8000
+     ADD B, POP
+     SET C, 0x8000
+:println_update_video_ram
+     IFE B, 0x8180
+     SET PC, println_clear_space_for_new_line
+     SET PUSH, [B]
+     SET [C], POP
+     ADD B, 1
+     ADD C, 1
+     SET PC, println_update_video_ram
+:println_clear_space_for_new_line
+     IFE C, 0x8180
+     SET PC, println_search_empty_line
+     SET [C], 0
+     ADD C, 1
+     SET PC, println_clear_space_for_new_line
+:println_end
+     SET X, [0x8180]
+     ADD X, 0x0020
+     SET [0x8180], X
+
+     SET O, POP
+     SET J, POP
+     SET I, POP
+     SET Z, POP
+     SET Y, POP
+     SET X, POP
+     SET C, POP
+     SET B, POP
+     SET A, POP
+     ADD SP, 1
+     SET PC, POP
+; End println function
+
+; Start print function
+;     1 param - address to zero-ended string
+;     2 param - return address
+:print
+     SET PUSH, A
+     SET PUSH, B
+     SET PUSH, C
+     SET PUSH, X
+     SET PUSH, Y
+     SET PUSH, Z
+     SET PUSH, I
+     SET PUSH, J
+     SET PUSH, O
+
+     ADD SP, 0x000A
+     SET A, PEEK ; address of string in A
+     SUB SP, 1
+     SET X, PEEK
+     ADD SP, 1
+     SET PEEK, X
+     SUB SP, 0x000A
+
+     SET B, [0x8180]
+     IFE B, 0x8180
+     SUB B, 0x0020
+     SET I, 0
+:print_loop
+     IFE [A], 0
+     SET PC, print_end
+     SET X, [A]
+     ADD X, 0xA000
+     SET [B], X
+     ADD A, 1
+     ADD B, 1
+     IFE I, 0x001F
+     SET PC, print_end
+     ADD I, 1
+     SET PC, print_loop
+:print_end
+     SET O, POP
+     SET J, POP
+     SET I, POP
+     SET Z, POP
+     SET Y, POP
+     SET X, POP
+     SET C, POP
+     SET B, POP
+     SET A, POP
+     ADD SP, 1
+     SET PC, POP
+; End print function
+
+; Start showWand function
+;     1 param - return address
+:showWand_wand0
+     DAT 0x0020, 0x005C, 0x0000
+:showWand_wand1
+     DAT 0x0020, 0x007C, 0x0000
+:showWand_wand2
+     DAT 0x0020, 0x002F, 0x0000
+:showWand
+     SET PUSH, A
+     SET PUSH, B
+     SET PUSH, C
+     SET PUSH, X
+     SET PUSH, Y
+     SET PUSH, Z
+     SET PUSH, I
+     SET PUSH, J
+     SET PUSH, O
+
+     SET I, 0
+     SET J, 0
+     SET C, 0
+:showWand_waiting
+     IFE J, 0x0010
+     SET PC, showWand_end
+     IFN I, 0x0FFF
+     SET PC, showWand_waiting_next
+     ADD J, 1
+     SET I, 0
+     IFE C, 0
+     SET PC, showWand_print_wand0
+     IFE C, 1
+     SET PC, showWand_print_wand1
+     IFE C, 2
+     SET PC, showWand_print_wand2
+:showWand_print_wand0
+     SET C, 1
+     SET PUSH, showWand_wand0
+     JSR print
+     SET PC, showWand_waiting
+:showWand_print_wand1
+     SET C, 2
+     SET PUSH, showWand_wand1
+     JSR print
+     SET PC, showWand_waiting
+:showWand_print_wand2
+     SET C, 0
+     SET PUSH, showWand_wand2
+     JSR print
+     SET PC, showWand_waiting
+:showWand_waiting_next
+     ADD I, 1
+     SET PC, showWand_waiting
+:showWand_end
+     SET O, POP
+     SET J, POP
+     SET I, POP
+     SET Z, POP
+     SET Y, POP
+     SET X, POP
+     SET C, POP
+     SET B, POP
+     SET A, POP
+     SET PC, POP
+; End showWand function
+; ------------ End Some loader specific routine ------------
