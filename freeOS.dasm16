@@ -48,12 +48,24 @@
 
 ; precompiled modules
 :modules_count
-     DAT 0x0004
+     DAT 0x0005
 
      DAT 0x0010 ;module_size
      DAT 0x0005 ;module_data_size
      DAT "free_mod0", 0x0000 ;module_name, maximum 12 characters
      DAT 0x00FA, 0x0045, 0x0750, 0x0452, 0x7630 ;module_data
+
+     DAT 0x0029
+     DAT 0x001D
+     DAT "testModule", 0x0000
+     DAT 0x7011, 0x8413, 0x0401, 0x7C02
+     DAT 0x0009, 0x01C1, 0x0000, 0x0053
+     DAT 0x0044, 0x0511, 0x0006, 0x7DE1
+     DAT 0x8160, 0x0020, 0x0401, 0x9C02
+     DAT 0x2001, 0x7C02, 0xA000, 0x01E1
+     DAT 0x8161, 0x0401, 0xA002, 0x2001
+     DAT 0x7C02, 0xA000, 0x01E1, 0x8162
+     DAT 0x61C1
 
      DAT 0x000D
      DAT 0x0002
@@ -73,7 +85,6 @@
 :loader
      SET X, 0x8000
      SET [0x8180], X ; set video ram line pointer
-     SET A, address_of_api_list
 
 :print_os_version
      SET PUSH, os_version
@@ -133,6 +144,10 @@
      SET PUSH, [address_of_fos_modules]
      SET PUSH, [lffs_start_address]
      JSR loadModules
+
+     SET A, [0x0002]
+     ADD A, 2
+     JSR A
 :dummy
      SET PC, dummy
 
@@ -516,9 +531,9 @@
      SET J, 0
      SET C, 0
 :showWand_waiting
-     IFE J, 0x0010
+     IFE J, 0x001F
      SET PC, showWand_end
-     IFN I, 0x0FFF
+     IFN I, 0x01FF
      SET PC, showWand_waiting_next
      ADD J, 1
      SET I, 0
