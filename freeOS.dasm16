@@ -7,7 +7,7 @@
 ; Email: darkness.bsd@gmail.com
 ; From: F.E.D. (http://0x10cforum.com/forum/m/4932880/
 ;               viewthread/2806646-federation-exploration-development)
-; Github:
+; Github: github.com/darknessbsd/freeos
 
 :init
      SET PC, loader
@@ -133,9 +133,6 @@
      SET PUSH, [address_of_fos_modules]
      SET PUSH, [lffs_start_address]
      JSR loadModules
-
-     SET A, [address_of_api_list]
-     SET PC, A
 :dummy
      SET PC, dummy
 
