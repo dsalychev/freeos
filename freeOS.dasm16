@@ -48,16 +48,7 @@
 
 ; precompiled modules
 :modules_count
-     DAT 0x0005
-
-     DAT 0x0024
-     DAT 0x0019
-     DAT "testModule", 0x0000
-     DAT 0x7011, 0x8413, 0x7DC1, 0x0007, 0x0000, 0x0053
-     DAT 0x0044, 0x0511, 0x0004, 0x7DE1, 0x8160, 0x0020
-     DAT 0x4401, 0x0005, 0x7C02, 0xA000, 0x01E1, 0x8161
-     DAT 0x4401, 0x0006, 0x7C02, 0xA000, 0x01E1, 0x8162
-     DAT 0xE1C1
+     DAT 0x0004
 
      DAT 0x0010 ;module_size
      DAT 0x0005 ;module_data_size
@@ -85,24 +76,24 @@
      SET A, address_of_api_list
 
 :print_os_version
-     ;SET PUSH, os_version
-     ;JSR println
+     SET PUSH, os_version
+     JSR println
 :print_os_info
-     ;SET PUSH, os_info0
-     ;JSR println
-     ;SET PUSH, os_info1
-     ;JSR println
-     ;SET PUSH, os_info2
-     ;JSR println
-     ;SET PUSH, os_info3
-     ;JSR println
-     ;JSR showWand
-     ;SET PUSH, os_info3
-     ;JSR print
+     SET PUSH, os_info0
+     JSR println
+     SET PUSH, os_info1
+     JSR println
+     SET PUSH, os_info2
+     JSR println
+     SET PUSH, os_info3
+     JSR println
+     JSR showWand
+     SET PUSH, os_info3
+     JSR print
 
 :search_for_lffs
-     ;SET PUSH, lffs_search_message
-     ;JSR println
+     SET PUSH, lffs_search_message
+     JSR println
      SET A, [lffs_start_address]
      IFN [A], 0x6C66
      SET PC, create_lffs
@@ -111,8 +102,8 @@
      SET PC, create_lffs
      SET PC, load_modules
 :create_lffs
-     ;SET PUSH, lffs_create_message
-     ;JSR println
+     SET PUSH, lffs_create_message
+     JSR println
      SET A, [lffs_start_address]
      SET [A], 0x6C66
      ADD A, 1
@@ -127,17 +118,17 @@
      SET [A], 0x0000
      ADD A, 1
      SET [A], 0x0000 ; set checksum
-     ;SET PUSH, modules_writing_message
-     ;JSR println
+     SET PUSH, modules_writing_message
+     JSR println
      SET PUSH, modules_count
      SET PUSH, 0x6000
      JSR writeModules
 :load_modules
-     ;SET PUSH, modules_loading_message
-     ;JSR println
-     ;JSR showWand
-     ;SET PUSH, os_info3
-     ;JSR print
+     SET PUSH, modules_loading_message
+     JSR println
+     JSR showWand
+     SET PUSH, os_info3
+     JSR print
      SET PUSH, [address_of_api_list]
      SET PUSH, [address_of_fos_modules]
      SET PUSH, [lffs_start_address]
@@ -189,8 +180,8 @@
      ADD Z, 0x0010
      SET Y, Z ; address of file data
 
-     ;SET PUSH, C
-     ;JSR println ; print name of module
+     SET PUSH, C
+     JSR println ; print name of module
 :setup_loadModules_copy_file_data
      SET Z, B ; place address of modules space to Z
      SET I, A ; place address of api list to I
