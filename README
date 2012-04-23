@@ -25,5 +25,85 @@ for everyone.
 1. Checking for lffs at 0x6000 (if not - format 0x6000 in lffs)
 2. Writing OS modules to lffs
 3. Loading modules from lffs to ram (start at 0x0600) and building entry points list (start at 0x0500)
-(in development) 4. Control transfer to some OS module, which handling user input
+*4. (in development) Control transfer to some OS module, which handling user input
+
+#Memory mapping
+
+|______Stack_______________|0xFFFF
+|__________________________|
+|______(Some I/O?)_________|
+|__________________________|
+|__________________________|
+|______Keyboard buffer_____|0x9000
+|                          |
+|______Video memory________|0x8000
+|                          |
+|______Filesystem(lffs)____|0x6000
+|                          |
+|                          |
+|                          |
+|                          |
+|                          |
+|                          |
+|______User App space______|0xXXXX - depends of size and count of OS modules
+|                          |
+|                          |
+|______OS modules__________|0x0600
+|______API entry points____|0x0500
+|                          |
+|______Loader______________|0x0000
+
+#Header of lffs
+ __________________________ 0x0000
+|_lffs signature, 2 words__|0x0002
+|_lffs version, 1 word_____|0x0003
+|_start address, 1 word____|0x0004
+|_size of lffs, 1 word_____|0x0005
+|_checksun, 2 words________|0x0007
+|                          |
+|   1st file record        |
+|__________________________|
+|                          |
+|   2nd file record        |
+|__________________________|
+|                          |
+|   3rd file record        |
+|__________________________|
+|                          |
+|   ...                    |
+|__________________________|
+
+#File record in lffs
+ ____________________________________ 0x0000
+|_name of file, 12 words_____________|0x000C
+|_offset to next file record, 1 word_|0x000D
+|_size of file data, 1 word__________|0x000E
+|_file rights and attributes, 2 words|0x0010
+|_file data, n words_________________|
+
+#File rights word
+ _________________
+|________|________|
+15       7        0
+
+15 - file/dir flag (0 - file, 1 - directory)
+14 - read right (owner)
+13 - write right (owner)
+12 - execute right (owner)
+11 - read right (group)
+10 - write right (group)
+9 - execute right (group)
+8 - read right (others)
+7 - write right (others)
+6 - execute right (others)
+
+#File attributes word
+ _________________
+|________|________|
+15       7        0
+
+15 - system file/not a system file flag (0 - not a system file, 1 - system file)
+7 - initial file fragment
+6 - middle file fragment
+5 - end file fragment
 
