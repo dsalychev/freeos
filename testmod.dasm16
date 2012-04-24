@@ -1,0 +1,40 @@
+; testmod
+;
+; Test module for checking modules loading,
+; api entry point list and as example of writing
+; modules for freeOS.
+;
+; That module can be loaded
+; to any address of ram!
+;
+; OS: freeOS
+; Initiator: darkness.bsd (Dmitry)
+; Email: darkness.bsd@gmail.com
+; From: F.E.D. (http://0x10cforum.com/forum/m/4932880/viewthread/2806646-federation-exploration-development)
+; Github: github.com/darknessbsd/freeos
+
+     SET B, PC ; save PC in B
+     SUB B, 1 ; get code base address in B
+
+     SET A, B ; calculate address of init
+     ADD A, init ; as [base + init_offset]
+     SET PC, A ; jump to [base + init_offset]
+
+:first_letter
+     DAT "S"
+:second_letter
+     DAT "D"
+
+:init
+     SET [0x8160], 0x0020 ; write " " to first symbol in last string in video ram
+     SET A, B ; calculate address of first_letter
+     ADD A, first_letter ; as [base + first_letter]
+     SET A, [A] ; get value at [base + first_letter]
+     ADD A, 0xA000
+     SET [0x8161], A ; print first letter to console
+     SET A, B ; calculate address of second_letter
+     ADD A, second_letter ; as [base + second_letter]
+     SET A, [A] ; get value at [base + second_letter]
+     ADD A, 0xA000
+     SET [0x8162], A ; print second letter to console
+     SET PC, POP ; module MUST be called be JSR, than, we can return
